@@ -1,32 +1,14 @@
-const userRoutes = require("./routes/userRoutes");
-const authRoutes = require("./routes/authRoutes");
 const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
-
-const app = express();
-
-
-
-app.use("/api/auth", authRoutes);
-app.use("/api/user", userRoutes);
-
-// Test Route
-app.get("/", (req, res) => {
-  res.json({
-    success: true,
-    message: "Skill Exchange Backend API is Running",
-  });
-});
-
-
-
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
 
+const authRoutes = require("./routes/authRoutes");
+const userRoutes = require("./routes/userRoutes");
 const errorHandler = require("./middleware/errorMiddleware");
 
-
+const app = express();
 
 /* ===========================
    Security Middleware
@@ -60,17 +42,24 @@ app.get("/api/health", (req, res) => {
 
 /* ===========================
    API Routes
-   (Add these after teammates
-   complete their modules)
+   NOTE: mounted at /api/users (plural) — this is the
+   agreed standard. Frontend (userApi.js, matchApi.js)
+   already calls /api/users/* and /api/matches/*, so
+   backend routes must match these exactly.
 =========================== */
+app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
 
-// const authRoutes = require("./routes/authRoutes");
-// const userRoutes = require("./routes/userRoutes");
 // const matchRoutes = require("./routes/matchRoutes");
-
-// app.use("/api/auth", authRoutes);
-// app.use("/api/users", userRoutes);
 // app.use("/api/matches", matchRoutes);
+
+// Test Route
+app.get("/", (req, res) => {
+  res.json({
+    success: true,
+    message: "Skill Exchange Backend API is Running",
+  });
+});
 
 /* ===========================
    404 Handler
