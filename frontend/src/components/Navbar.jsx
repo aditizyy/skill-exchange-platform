@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, NavLink } from "react-router-dom"
 import { Menu, X, ChevronDown, LogOut, User, Settings } from "lucide-react"
 
 const NAV_LINKS = [
@@ -15,28 +15,38 @@ export default function Navbar() {
   const [profileOpen, setProfileOpen] = useState(false)
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white/95 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+    <nav className="border-b border-slate-200 bg-white">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2" onClick={() => setMobileOpen(false)}>
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 text-lg font-bold text-white">
+        <Link
+          to="/"
+          className="flex items-center gap-2"
+          onClick={() => setMobileOpen(false)}
+        >
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 text-sm font-bold text-white">
             S
           </span>
-          <span className="text-lg font-bold tracking-tight text-slate-900">
-            Skill <span className="text-blue-600">Exchange</span>
+          <span className="text-lg font-bold text-slate-900">
+            Skill Exchange
           </span>
         </Link>
 
         {/* Desktop nav links */}
         <div className="hidden items-center gap-1 md:flex">
           {NAV_LINKS.map((link) => (
-            <Link
+            <NavLink
               key={link.label}
               to={link.to}
-              className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-600"
+              className={({ isActive }) =>
+                `rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                  isActive
+                    ? "bg-blue-50 text-blue-600"
+                    : "text-slate-600 hover:bg-blue-50 hover:text-blue-600"
+                }`
+              }
             >
               {link.label}
-            </Link>
+            </NavLink>
           ))}
         </div>
 
@@ -51,19 +61,32 @@ export default function Navbar() {
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">
                 JD
               </span>
+
               <ChevronDown
-                className={`h-4 w-4 text-slate-500 transition-transform ${profileOpen ? "rotate-180" : ""}`}
+                className={`h-4 w-4 text-slate-500 transition-transform ${
+                  profileOpen ? "rotate-180" : ""
+                }`}
               />
             </button>
 
             {profileOpen && (
               <>
-                <div className="fixed inset-0 z-10" onClick={() => setProfileOpen(false)} aria-hidden="true" />
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setProfileOpen(false)}
+                  aria-hidden="true"
+                />
+
                 <div className="absolute right-0 z-20 mt-2 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
                   <div className="border-b border-slate-100 px-4 py-3">
-                    <p className="text-sm font-semibold text-slate-900">Jane Doe</p>
-                    <p className="truncate text-xs text-slate-500">jane.doe@email.com</p>
+                    <p className="text-sm font-semibold text-slate-900">
+                      Jane Doe
+                    </p>
+                    <p className="truncate text-xs text-slate-500">
+                      jane.doe@email.com
+                    </p>
                   </div>
+
                   <div className="py-1">
                     <button
                       type="button"
@@ -72,6 +95,7 @@ export default function Navbar() {
                       <User className="h-4 w-4" />
                       Profile
                     </button>
+
                     <button
                       type="button"
                       className="flex w-full items-center gap-2 px-4 py-2 text-sm text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-600"
@@ -102,7 +126,11 @@ export default function Navbar() {
           aria-label="Toggle menu"
           aria-expanded={mobileOpen}
         >
-          {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          {mobileOpen ? (
+            <X className="h-6 w-6" />
+          ) : (
+            <Menu className="h-6 w-6" />
+          )}
         </button>
       </div>
 
@@ -111,14 +139,20 @@ export default function Navbar() {
         <div className="border-t border-slate-200 bg-white md:hidden">
           <div className="space-y-1 px-4 py-3">
             {NAV_LINKS.map((link) => (
-              <Link
+              <NavLink
                 key={link.label}
                 to={link.to}
                 onClick={() => setMobileOpen(false)}
-                className="block rounded-lg px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-600"
+                className={({ isActive }) =>
+                  `block rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                    isActive
+                      ? "bg-blue-50 text-blue-600"
+                      : "text-slate-600 hover:bg-blue-50 hover:text-blue-600"
+                  }`
+                }
               >
                 {link.label}
-              </Link>
+              </NavLink>
             ))}
           </div>
 
@@ -127,11 +161,17 @@ export default function Navbar() {
               <span className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">
                 JD
               </span>
+
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-slate-900">Jane Doe</p>
-                <p className="truncate text-xs text-slate-500">jane.doe@email.com</p>
+                <p className="text-sm font-semibold text-slate-900">
+                  Jane Doe
+                </p>
+                <p className="truncate text-xs text-slate-500">
+                  jane.doe@email.com
+                </p>
               </div>
             </div>
+
             <button
               type="button"
               className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700"

@@ -1,120 +1,128 @@
-"use client"
+import {
+  Check,
+  GraduationCap,
+  Lightbulb,
+} from "lucide-react"
 
-import { useState } from "react"
+import AvatarUpload from "./AvatarUpload"
+import SkillTagSelector from "./SkillTagSelector"
 
-export default function ProfileForm({ initialName = "", initialBio = "", onSubmit }) {
-  const [fullName, setFullName] = useState(initialName)
-  const [bio, setBio] = useState(initialBio)
-  const [errors, setErrors] = useState({})
-
-  const BIO_MAX = 240
-
-  function validate() {
-    const next = {}
-
-    if (!fullName.trim()) {
-      next.fullName = "Full name is required."
-    } else if (fullName.trim().length < 2) {
-      next.fullName = "Full name must be at least 2 characters."
-    }
-
-    if (bio.length > BIO_MAX) {
-      next.bio = `Bio must be ${BIO_MAX} characters or fewer.`
-    }
-
-    setErrors(next)
-    return Object.keys(next).length === 0
-  }
-
-  function handleSubmit(e) {
-    e.preventDefault()
-    if (!validate()) return
-    onSubmit?.({ fullName: fullName.trim(), bio: bio.trim() })
-  }
-
+export default function ProfileForm({
+  photo,
+  onPhotoChange,
+  fullName,
+  setFullName,
+  bio,
+  setBio,
+  teachSkills,
+  learnSkills,
+  onTeachSkillToggle,
+  onLearnSkillToggle,
+  onTeachSkillRemove,
+  onLearnSkillRemove,
+  suggestions,
+  onSubmit,
+}) {
   return (
     <form
-      onSubmit={handleSubmit}
-      noValidate
-      className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
+      onSubmit={onSubmit}
+      className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
     >
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold text-slate-900">Edit Profile</h2>
-        <p className="mt-1 text-sm text-slate-500">Update your personal details below.</p>
+      {/* Photo upload */}
+      <AvatarUpload
+        photo={photo}
+        onPhotoChange={onPhotoChange}
+      />
+
+      {/* Full name */}
+      <div className="mt-6 flex flex-col gap-2">
+        <label
+          htmlFor="fullName"
+          className="text-sm font-medium text-slate-700"
+        >
+          Full Name
+        </label>
+
+        <input
+          id="fullName"
+          type="text"
+          value={fullName}
+          onChange={(e) => setFullName(e.target.value)}
+          placeholder="e.g. Jordan Rivera"
+          className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none transition-colors placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+        />
       </div>
 
-      <div className="space-y-5">
-        <div>
-          <label htmlFor="fullName" className="mb-1.5 block text-sm font-medium text-slate-700">
-            Full Name
-          </label>
-          <input
-            id="fullName"
-            type="text"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            placeholder="Jane Doe"
-            aria-invalid={errors.fullName ? "true" : "false"}
-            aria-describedby={errors.fullName ? "fullName-error" : undefined}
-            className={`w-full rounded-lg border bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 ${
-              errors.fullName ? "border-red-400 focus:border-red-400" : "border-slate-300 focus:border-blue-500"
-            }`}
-          />
-          {errors.fullName && (
-            <p id="fullName-error" className="mt-1.5 text-sm text-red-600">
-              {errors.fullName}
-            </p>
-          )}
-        </div>
+      {/* Bio */}
+      <div className="mt-5 flex flex-col gap-2">
+        <label
+          htmlFor="bio"
+          className="text-sm font-medium text-slate-700"
+        >
+          Short Bio
+        </label>
 
-        <div>
-          <div className="mb-1.5 flex items-center justify-between">
-            <label htmlFor="bio" className="block text-sm font-medium text-slate-700">
-              Bio
-            </label>
-            <span className={`text-xs ${bio.length > BIO_MAX ? "text-red-600" : "text-slate-400"}`}>
-              {bio.length}/{BIO_MAX}
-            </span>
-          </div>
-          <textarea
-            id="bio"
-            rows={4}
-            value={bio}
-            onChange={(e) => setBio(e.target.value)}
-            placeholder="Tell others a bit about yourself and the skills you're passionate about..."
-            aria-invalid={errors.bio ? "true" : "false"}
-            aria-describedby={errors.bio ? "bio-error" : undefined}
-            className={`w-full resize-none rounded-lg border bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 ${
-              errors.bio ? "border-red-400 focus:border-red-400" : "border-slate-300 focus:border-blue-500"
-            }`}
-          />
-          {errors.bio && (
-            <p id="bio-error" className="mt-1.5 text-sm text-red-600">
-              {errors.bio}
-            </p>
-          )}
-        </div>
+        <textarea
+          id="bio"
+          value={bio}
+          onChange={(e) => setBio(e.target.value)}
+          rows={3}
+          maxLength={240}
+          placeholder="Share a little about yourself and your learning goals..."
+          className="resize-none rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none transition-colors placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+        />
+
+        <span className="self-end text-xs text-slate-400">
+          {bio.length}/240
+        </span>
       </div>
 
-      <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-end">
+      {/* Skills to teach */}
+      <div className="mt-5">
+        <SkillTagSelector
+          label="Skills I Can Teach"
+          icon={<GraduationCap className="h-4 w-4" />}
+          placeholder="Search skills to teach..."
+          selected={teachSkills}
+          onToggle={onTeachSkillToggle}
+          onRemove={onTeachSkillRemove}
+          suggestions={suggestions}
+          accent="teach"
+        />
+      </div>
+
+      {/* Skills to learn */}
+      <div className="mt-5">
+        <SkillTagSelector
+          label="Skills I Want to Learn"
+          icon={<Lightbulb className="h-4 w-4" />}
+          placeholder="Search skills to learn..."
+          selected={learnSkills}
+          onToggle={onLearnSkillToggle}
+          onRemove={onLearnSkillRemove}
+          suggestions={suggestions}
+          accent="learn"
+        />
+      </div>
+
+      {/* Actions */}
+      <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
         <button
           type="button"
-          onClick={() => {
-            setFullName(initialName)
-            setBio(initialBio)
-            setErrors({})
-          }}
-          className="rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+          className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
         >
-          Reset
+          Skip for now
         </button>
+
         <button
           type="submit"
-          className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700"
         >
-          Save Changes
+          <Check className="h-4 w-4" />
+          Save &amp; Continue
         </button>
       </div>
     </form>
   )
 }
+
