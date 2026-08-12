@@ -9,6 +9,9 @@ const {
     updateProfile
 } = require("../controllers/userController");
 
+const { updateProfileValidation } = require("../validators/userValidators");
+const validateRequest = require("../validators/validateRequest");
+
 router.get(
     "/profile",
     authMiddleware,
@@ -18,6 +21,8 @@ router.get(
 router.put(
     "/profile",
     authMiddleware,
+    updateProfileValidation,
+    validateRequest,
     updateProfile
 );
 
