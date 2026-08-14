@@ -11,8 +11,8 @@ const registerValidation = [
         .withMessage("Valid email is required"),
 
     body("password")
-        .isLength({ min: 6 })
-        .withMessage("Password must be at least 6 characters"),
+        .isLength({ min: 8 })
+        .withMessage("Password must be at least 8 characters"),
 
     (req, res, next) => {
         const errors = validationResult(req);
