@@ -6,6 +6,7 @@ const cookieParser = require("cookie-parser");
 
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
+const matchRoutes = require("./routes/matchRoutes");
 const errorHandler = require("./middleware/errorMiddleware");
 
 const app = express();
@@ -42,16 +43,10 @@ app.get("/api/health", (req, res) => {
 
 /* ===========================
    API Routes
-   NOTE: mounted at /api/users (plural) — this is the
-   agreed standard. Frontend (userApi.js, matchApi.js)
-   already calls /api/users/* and /api/matches/*, so
-   backend routes must match these exactly.
 =========================== */
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
-
-// const matchRoutes = require("./routes/matchRoutes");
-// app.use("/api/matches", matchRoutes);
+app.use("/api/matches", matchRoutes);
 
 // Test Route
 app.get("/", (req, res) => {
