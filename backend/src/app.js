@@ -42,9 +42,7 @@ app.get("/api/health", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
-
-// const matchRoutes = require("./routes/matchRoutes");
-// app.use("/api/matches", matchRoutes);
+app.use("/api/matches", matchRoutes);
 
 // Test Route
 app.get("/", (req, res) => {

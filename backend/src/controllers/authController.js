@@ -10,9 +10,9 @@ const registerUser = async (req, res) => {
         const existingUser = await User.findOne({ email });
 
         if (existingUser) {
-            return res.status(400).json({
+            return res.status(409).json({
                 success: false,
-                message: "User already exists"
+                message: "An account with this email already exists"
             });
         }
 
@@ -39,7 +39,10 @@ const registerUser = async (req, res) => {
             user: {
                 id: user._id,
                 name: user.name,
-                email: user.email
+                email: user.email,
+                skillsToTeach: user.skillsToTeach,
+                skillsToLearn: user.skillsToLearn,
+                avatarUrl: user.avatarUrl
             }
         });
 
@@ -91,7 +94,10 @@ const loginUser = async (req, res) => {
             user: {
                 id: user._id,
                 name: user.name,
-                email: user.email
+                email: user.email,
+                skillsToTeach: user.skillsToTeach,
+                skillsToLearn: user.skillsToLearn,
+                avatarUrl: user.avatarUrl
             }
         });
 
