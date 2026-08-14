@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { updateUserProfile } from "../api/userApi"
 import ProfileForm from "../components/profile/ProfileForm"
 
 const SKILL_LIBRARY = [
@@ -50,16 +51,22 @@ export default function ProfileSetup() {
     )
   }
 
-  const handleSave = (e) => {
-    e.preventDefault()
-    console.log("[v0] Profile saved:", {
-      fullName,
-      bio,
-      teachSkills,
-      learnSkills,
-      photo,
-    })
+  const handleSave = async (e) => {
+   e.preventDefault()
+
+   try {
+     await updateUserProfile({
+       name: fullName,
+       bio,
+       skillsToTeach: teachSkills,
+       skillsToLearn: learnSkills,
+      })
+
+    console.log("Profile saved successfully")
+  } catch (error) {
+    console.error("Failed to save profile:", error)
   }
+}
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-10">
