@@ -23,7 +23,9 @@ const registerUser = async (req, res) => {
             email,
             password: hashedPassword
         });
-
+        if (!process.env.JWT_SECRET) {
+            throw new Error("JWT_SECRET is not configured");
+        }
         const token = jwt.sign(
             { id: user._id },
             process.env.JWT_SECRET,
@@ -45,7 +47,7 @@ const registerUser = async (req, res) => {
         });
 
     } catch (error) {
-
+        console.error("Registration Error:", error);
         res.status(500).json({
             success: false,
             message: "Server Error"
@@ -101,7 +103,7 @@ const loginUser = async (req, res) => {
 
     } catch (error) {
 
-        console.log(error);
+        console.error("Login Error:", error);
 
         res.status(500).json({
             success: false,
