@@ -9,6 +9,7 @@ const errorHandler = require("./middleware/errorMiddleware");
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const matchRoutes = require("./routes/matchRoutes");
+const messageRoutes = require("./routes/messageRoutes");
 
 const app = express();
 
@@ -40,6 +41,7 @@ if (process.env.NODE_ENV === "development") {
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/matches", matchRoutes);
+app.use("/api/messages", messageRoutes);
 
 // Test Route
 app.get("/", (req, res) => {
