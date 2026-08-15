@@ -2,18 +2,30 @@ const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
 const helmet = require("helmet");
+const cookieParser = require("cookie-parser");
+
+const errorHandler = require("./middleware/errorMiddleware");
+
+const authRoutes = require("./routes/authRoutes");
+const userRoutes = require("./routes/userRoutes");
+const matchRoutes = require("./routes/matchRoutes");
+
+const app = express();
+
+/* ===========================
+   Security & Core Middleware
+=========================== */
 app.use(helmet());
-app.use(cors());
+app.use(
+  cors({
+    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    credentials: true,
+  })
+);
 
 /* ===========================
    Body Parsing Middleware
-
-const cookieParser = require("cookie-parser");
-const errorHandler = require("./middleware/errorMiddleware");
-
-const app = express();
-app.use(helmet());
-app.use(cors());
+=========================== */
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -22,24 +34,9 @@ if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
 
-
-app.use("/api/auth", authRoutes);
-app.use("/api/user", userRoutes);
-
-// Test Route
-app.get("/", (req, res) => {
-  res.json({
-    success: true,
-    message: "Skill Exchange Backend API is Running",
-  });
-});
-app.get("/api/health", (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "Backend is running",
-  });
-});
-
+/* ===========================
+   Routes
+=========================== */
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/matches", matchRoutes);
@@ -49,6 +46,13 @@ app.get("/", (req, res) => {
   res.json({
     success: true,
     message: "Skill Exchange Backend API is Running",
+  });
+});
+
+app.get("/api/health", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Backend is running",
   });
 });
 
