@@ -12,18 +12,24 @@ const userSchema = new mongoose.Schema(
         type:String,
         required:true,
         unique:true,
-        lowercase:true
+        lowercase:true,
+        trim:true
     },
 
     password:{
         type:String,
         required:true,
-        minlength:6
+        minlength:8
     },
 
     skillsToTeach:[String],
 
-    skillsToLearn:[String]
+    skillsToLearn:[String],
+
+    avatarUrl:{
+        type:String,
+        default:null
+    }
 
 },
 {
