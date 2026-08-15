@@ -29,6 +29,12 @@ const userSchema = new mongoose.Schema(
     avatarUrl:{
         type:String,
         default:null
+    },
+
+    bio:{
+        type:String,
+        maxlength:240,
+        default:""
     }
 
 },

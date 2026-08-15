@@ -4,7 +4,7 @@ const getProfile = async (req, res) => {
 
     try {
 
-        const user = await User.findById(req.user.id).select("-passworname email skillsToTeach skillsToLearn ");
+        const user = await User.findById(req.user.id).select("-password");
 
         res.json({
             success: true,
@@ -28,7 +28,8 @@ const updateProfile = async (req, res) => {
         const {
             name,
             skillsToTeach,
-            skillsToLearn
+            skillsToLearn,
+            bio
         } = req.body;
 
         const updates = {};
@@ -45,6 +46,10 @@ const updateProfile = async (req, res) => {
             updates.skillsToLearn = [...new Set(skillsToLearn)];
         }
 
+        if (bio !== undefined) {
+            updates.bio = bio;
+        }
+
         const user = await User.findByIdAndUpdate(
             req.user.id,
             updates,
@@ -52,7 +57,7 @@ const updateProfile = async (req, res) => {
                 new: true,
                 runValidators: true
             }
-        ).select("name email skillsToTeach skillsToLearn ");
+        ).select("-password");
 
         if (!user) {
             return res.status(404).json({
