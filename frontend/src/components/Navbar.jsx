@@ -59,7 +59,7 @@ export default function Navbar() {
               className="flex items-center gap-2 rounded-full border border-slate-200 py-1 pl-1 pr-2 transition-colors hover:bg-slate-50"
             >
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">
-                JD
+                
               </span>
 
               <ChevronDown
@@ -80,10 +80,10 @@ export default function Navbar() {
                 <div className="absolute right-0 z-20 mt-2 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
                   <div className="border-b border-slate-100 px-4 py-3">
                     <p className="text-sm font-semibold text-slate-900">
-                      Jane Doe
+                      
                     </p>
                     <p className="truncate text-xs text-slate-500">
-                      jane.doe@email.com
+                      
                     </p>
                   </div>
 
@@ -159,15 +159,15 @@ export default function Navbar() {
           <div className="border-t border-slate-200 px-4 py-3">
             <div className="flex items-center gap-3 px-2 pb-3">
               <span className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">
-                JD
+                
               </span>
 
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-slate-900">
-                  Jane Doe
+                  
                 </p>
                 <p className="truncate text-xs text-slate-500">
-                  jane.doe@email.com
+                  
                 </p>
               </div>
             </div>
