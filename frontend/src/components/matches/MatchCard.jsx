@@ -25,7 +25,7 @@ export default function MatchCard({ person, isRequested, onToggleRequest }) {
           </h2>
 
           <p className="truncate text-xs text-slate-500">
-            {person.title} &middot; {person.location}
+            {person.location ? `${person.title} · ${person.location}` : person.title}
           </p>
         </div>
       </div>

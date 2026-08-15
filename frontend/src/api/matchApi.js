@@ -17,6 +17,11 @@ export const getInboxRequests = async () => {
   return response.data;
 };
 
+export const getSentRequests = async () => {
+  const response = await axiosInstance.get("/matches/sent");
+  return response.data;
+};
+
 export const respondToRequest = async (requestId, status) => {
   const response = await axiosInstance.patch(
     `/matches/${requestId}`,

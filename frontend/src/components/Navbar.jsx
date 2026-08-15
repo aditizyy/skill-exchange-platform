@@ -1,8 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { Link, NavLink } from "react-router-dom"
+import { Link, NavLink, useNavigate } from "react-router-dom"
 import { Menu, X, ChevronDown, LogOut, User, Settings } from "lucide-react"
+import { useAuth } from "../context/AuthContext"
+import { getInitials, getAvatarColor } from "../utils/avatar"
 
 const NAV_LINKS = [
   { label: "Home", to: "/" },
@@ -13,6 +15,21 @@ const NAV_LINKS = [
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
+
+  const { user, isAuthenticated, logout } = useAuth()
+  const navigate = useNavigate()
+
+  const initials = user ? getInitials(user.name) : "?"
+  const avatarColor = user ? getAvatarColor(user.id || user.name) : "bg-slate-400"
+
+  const handleLogout = () => {
+    logout()
+    setProfileOpen(false)
+    setMobileOpen(false)
+    navigate("/login")
+  }
+
+  const links = isAuthenticated ? NAV_LINKS : NAV_LINKS.filter((l) => l.to === "/")
 
   return (
     <nav className="border-b border-slate-200 bg-white">
@@ -33,7 +50,7 @@ export default function Navbar() {
 
         {/* Desktop nav links */}
         <div className="hidden items-center gap-1 md:flex">
-          {NAV_LINKS.map((link) => (
+          {links.map((link) => (
             <NavLink
               key={link.label}
               to={link.to}
@@ -50,73 +67,92 @@ export default function Navbar() {
           ))}
         </div>
 
-        {/* Right side: avatar + dropdown + logout (desktop) */}
-        <div className="hidden items-center gap-3 md:flex">
-          <div className="relative">
+        {/* Right side: desktop */}
+        {isAuthenticated ? (
+          <div className="hidden items-center gap-3 md:flex">
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setProfileOpen((v) => !v)}
+                className="flex items-center gap-2 rounded-full border border-slate-200 py-1 pl-1 pr-2 transition-colors hover:bg-slate-50"
+              >
+                <span className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold text-white ${avatarColor}`}>
+                  {initials}
+                </span>
+
+                <ChevronDown
+                  className={`h-4 w-4 text-slate-500 transition-transform ${
+                    profileOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              {profileOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setProfileOpen(false)}
+                    aria-hidden="true"
+                  />
+
+                  <div className="absolute right-0 z-20 mt-2 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+                    <div className="border-b border-slate-100 px-4 py-3">
+                      <p className="text-sm font-semibold text-slate-900">
+                        {user?.name}
+                      </p>
+                      <p className="truncate text-xs text-slate-500">
+                        {user?.email}
+                      </p>
+                    </div>
+
+                    <div className="py-1">
+                      <Link
+                        to="/profile"
+                        onClick={() => setProfileOpen(false)}
+                        className="flex w-full items-center gap-2 px-4 py-2 text-sm text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-600"
+                      >
+                        <User className="h-4 w-4" />
+                        Profile
+                      </Link>
+
+                      <button
+                        type="button"
+                        className="flex w-full items-center gap-2 px-4 py-2 text-sm text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-600"
+                      >
+                        <Settings className="h-4 w-4" />
+                        Settings
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
             <button
               type="button"
-              onClick={() => setProfileOpen((v) => !v)}
-              className="flex items-center gap-2 rounded-full border border-slate-200 py-1 pl-1 pr-2 transition-colors hover:bg-slate-50"
+              onClick={handleLogout}
+              className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
             >
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">
-                JD
-              </span>
-
-              <ChevronDown
-                className={`h-4 w-4 text-slate-500 transition-transform ${
-                  profileOpen ? "rotate-180" : ""
-                }`}
-              />
+              <LogOut className="h-4 w-4" />
+              Logout
             </button>
-
-            {profileOpen && (
-              <>
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setProfileOpen(false)}
-                  aria-hidden="true"
-                />
-
-                <div className="absolute right-0 z-20 mt-2 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
-                  <div className="border-b border-slate-100 px-4 py-3">
-                    <p className="text-sm font-semibold text-slate-900">
-                      Jane Doe
-                    </p>
-                    <p className="truncate text-xs text-slate-500">
-                      jane.doe@email.com
-                    </p>
-                  </div>
-
-                  <div className="py-1">
-                    <button
-                      type="button"
-                      className="flex w-full items-center gap-2 px-4 py-2 text-sm text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-600"
-                    >
-                      <User className="h-4 w-4" />
-                      Profile
-                    </button>
-
-                    <button
-                      type="button"
-                      className="flex w-full items-center gap-2 px-4 py-2 text-sm text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-600"
-                    >
-                      <Settings className="h-4 w-4" />
-                      Settings
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
           </div>
-
-          <button
-            type="button"
-            className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
-          >
-            <LogOut className="h-4 w-4" />
-            Logout
-          </button>
-        </div>
+        ) : (
+          <div className="hidden items-center gap-2 md:flex">
+            <Link
+              to="/login"
+              className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-600"
+            >
+              Log in
+            </Link>
+            <Link
+              to="/register"
+              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+            >
+              Sign up
+            </Link>
+          </div>
+        )}
 
         {/* Mobile hamburger */}
         <button
@@ -138,7 +174,7 @@ export default function Navbar() {
       {mobileOpen && (
         <div className="border-t border-slate-200 bg-white md:hidden">
           <div className="space-y-1 px-4 py-3">
-            {NAV_LINKS.map((link) => (
+            {links.map((link) => (
               <NavLink
                 key={link.label}
                 to={link.to}
@@ -156,30 +192,50 @@ export default function Navbar() {
             ))}
           </div>
 
-          <div className="border-t border-slate-200 px-4 py-3">
-            <div className="flex items-center gap-3 px-2 pb-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">
-                JD
-              </span>
+          {isAuthenticated ? (
+            <div className="border-t border-slate-200 px-4 py-3">
+              <div className="flex items-center gap-3 px-2 pb-3">
+                <span className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold text-white ${avatarColor}`}>
+                  {initials}
+                </span>
 
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-slate-900">
-                  Jane Doe
-                </p>
-                <p className="truncate text-xs text-slate-500">
-                  jane.doe@email.com
-                </p>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-900">
+                    {user?.name}
+                  </p>
+                  <p className="truncate text-xs text-slate-500">
+                    {user?.email}
+                  </p>
+                </div>
               </div>
-            </div>
 
-            <button
-              type="button"
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
-            >
-              <LogOut className="h-4 w-4" />
-              Logout
-            </button>
-          </div>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+              >
+                <LogOut className="h-4 w-4" />
+                Logout
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2 border-t border-slate-200 px-4 py-3">
+              <Link
+                to="/login"
+                onClick={() => setMobileOpen(false)}
+                className="rounded-lg px-4 py-2 text-center text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-600"
+              >
+                Log in
+              </Link>
+              <Link
+                to="/register"
+                onClick={() => setMobileOpen(false)}
+                className="rounded-lg bg-blue-600 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-blue-700"
+              >
+                Sign up
+              </Link>
+            </div>
+          )}
         </div>
       )}
     </nav>
