@@ -1,63 +1,33 @@
 "use client"
 
-import { useMemo, useState } from "react"
-import { Clock } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
+import { Clock, AlertCircle } from "lucide-react"
 
 import RequestCard from "../components/inbox/RequestCard"
 import RequestTabs from "../components/inbox/RequestTabs"
+import Loader from "../components/common/Loader"
+import { getInboxRequests, respondToRequest } from "../api/matchApi"
+import { getInitials, getAvatarColor } from "../utils/avatar"
 
-const INITIAL_REQUESTS = [
-  {
-    id: 1,
-    name: "Aditi",
-    title: "Product Designer",
-    initials: "A",
-    avatarColor: "bg-blue-600",
-    teach: ["UI/UX Design", "Figma", "Illustration"],
-    learn: ["React", "TypeScript"],
-    status: "pending",
-  },
-  {
-    id: 2,
-    name: "Kashika Soni",
-    title: "Frontend Engineer",
-    initials: "KS",
-    avatarColor: "bg-indigo-600",
-    teach: ["React", "TypeScript", "Node.js"],
-    learn: ["UI/UX Design", "Public Speaking"],
-    status: "pending",
-  },
-  {
-    id: 3,
-    name: "Disha kushwaha",
-    title: "Marketing Lead",
-    initials: "DK",
-    avatarColor: "bg-sky-600",
-    teach: ["Digital Marketing", "SEO", "Writing"],
-    learn: ["Data Analysis", "Excel"],
-    status: "accepted",
-  },
-  {
-    id: 4,
-    name: "Aastha Singh",
-    title: "Data Scientist",
-    initials: "AS",
-    avatarColor: "bg-cyan-700",
-    teach: ["Python", "Machine Learning", "Data Analysis"],
-    learn: ["Guitar", "Spanish"],
-    status: "declined",
-  },
-  {
-    id: 5,
-    name: "Vriti",
-    title: "Language Tutor",
-    initials: "V",
-    avatarColor: "bg-blue-500",
-    teach: ["Spanish", "French", "Public Speaking"],
-    learn: ["Photography", "Video Editing"],
-    status: "pending",
-  },
-]
+// Backend returns { id, status, from: { id, name, skillsToTeach, skillsToLearn, email? } }.
+// RequestCard expects { id, name, title, initials, avatarColor, teach, learn, status, email? }.
+function toDisplayRequest(req) {
+  const from = req.from || {}
+  const teach = from.skillsToTeach || []
+  const learn = from.skillsToLearn || []
+
+  return {
+    id: req.id,
+    name: from.name,
+    title: teach.length > 0 ? teach.slice(0, 2).join(", ") : "Skill Exchange member",
+    initials: getInitials(from.name),
+    avatarColor: getAvatarColor(from.id || from.name),
+    teach,
+    learn,
+    status: req.status,
+    email: from.email, // only present once status === "accepted", backend enforces this
+  }
+}
 
 const TABS = [
   { key: "pending", label: "Pending" },
@@ -66,8 +36,29 @@ const TABS = [
 ]
 
 export default function Inbox() {
-  const [requests, setRequests] = useState(INITIAL_REQUESTS)
+  const [requests, setRequests] = useState([])
   const [activeTab, setActiveTab] = useState("pending")
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+
+  useEffect(() => {
+    const loadInbox = async () => {
+      setLoading(true)
+      setError("")
+
+      try {
+        const response = await getInboxRequests()
+        setRequests((response.requests || []).map(toDisplayRequest))
+      } catch (err) {
+        console.error("Failed to load inbox:", err)
+        setError("Couldn't load your inbox right now. Please try again in a moment.")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadInbox()
+  }, [])
 
   const counts = useMemo(() => {
     return requests.reduce(
@@ -84,10 +75,23 @@ export default function Inbox() {
     [requests, activeTab],
   )
 
-  const updateStatus = (id, status) => {
-    setRequests((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status } : r)),
-    )
+  const updateStatus = async (id, status) => {
+    try {
+      const response = await respondToRequest(id, status)
+      const updated = response.request
+
+      // Merge in whatever the backend actually returns (e.g. email once accepted)
+      // rather than assuming the local optimistic state is correct.
+      setRequests((prev) =>
+        prev.map((r) =>
+          r.id === id
+            ? toDisplayRequest({ id, status: updated.status, from: updated.from })
+            : r,
+        ),
+      )
+    } catch (err) {
+      console.error("Failed to update request:", err)
+    }
   }
 
   return (
@@ -113,8 +117,14 @@ export default function Inbox() {
           counts={counts}
         />
 
-        {/* Cards */}
-        {visible.length === 0 ? (
+        {loading ? (
+          <Loader className="py-16" />
+        ) : error ? (
+          <div className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-red-200 bg-red-50 py-16 text-center text-sm text-red-600">
+            <AlertCircle className="h-5 w-5" />
+            {error}
+          </div>
+        ) : visible.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white py-16 text-center">
             <Clock className="mx-auto mb-3 h-8 w-8 text-slate-300" />
 

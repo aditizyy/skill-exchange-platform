@@ -1,86 +1,93 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+import { AlertCircle } from "lucide-react"
 import MatchFilterBar from "../components/matches/MatchFilterBar"
 import MatchList from "../components/matches/MatchList"
+import Loader from "../components/common/Loader"
+import { getSuggestedMatches, sendMatchRequest, getSentRequests } from "../api/matchApi"
+import { getInitials, getAvatarColor } from "../utils/avatar"
 
-const PEOPLE = [
-  {
-    id: 1,
-    name: "Aditi",
-    title: "Product Designer",
-    location: "Sarojini nagar, Delhi",
-    initials: "A",
-    avatarColor: "bg-blue-600",
-    teach: ["UI/UX Design", "Figma", "Illustration"],
-    learn: ["React", "TypeScript"],
-  },
-  {
-    id: 2,
-    name: "Kashika Soni",
-    title: "Frontend Engineer",
-    location: "Rohini, Delhi",
-    initials: "KS",
-    avatarColor: "bg-indigo-600",
-    teach: ["React", "TypeScript", "Node.js"],
-    learn: ["UI/UX Design", "Public Speaking"],
-  },
-  {
-    id: 3,
-    name: "Disha Kushwaha",
-    title: "Marketing Lead",
-    location: "Agra, UP",
-    initials: "DK",
-    avatarColor: "bg-sky-600",
-    teach: ["Digital Marketing", "SEO", "Writing"],
-    learn: ["Data Analysis", "Excel"],
-  },
-  {
-    id: 4,
-    name: "Aastha Singh",
-    title: "Data Scientist",
-    location: "Banaras, UP",
-    initials: "AS",
-    avatarColor: "bg-cyan-700",
-    teach: ["Python", "Machine Learning", "Data Analysis"],
-    learn: ["Guitar", "Spanish"],
-  },
-  {
-    id: 5,
-    name: "Vriti",
-    title: "Language Tutor",
-    location: "Chanakyapuri, Delhi",
-    initials: "V",
-    avatarColor: "bg-blue-500",
-    teach: ["Spanish", "French", "Public Speaking"],
-    learn: ["Photography", "Video Editing"],
-  },
-]
+// Backend returns { id, name, skillsToTeach, skillsToLearn, matchScore, ... }.
+// MatchCard expects { id, name, title, location, initials, avatarColor, teach, learn }.
+// This maps one shape to the other without touching MatchCard/MatchList.
+function toDisplayPerson(match) {
+  const teach = match.skillsToTeach || []
+  const learn = match.skillsToLearn || []
+
+  return {
+    id: match.id,
+    name: match.name,
+    title: teach.length > 0 ? teach.slice(0, 2).join(", ") : "Skill Exchange member",
+    location: "",
+    initials: getInitials(match.name),
+    avatarColor: getAvatarColor(match.id || match.name),
+    teach,
+    learn,
+  }
+}
 
 export default function Dashboard() {
   const [query, setQuery] = useState("")
   const [requested, setRequested] = useState([])
+  const [people, setPeople] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+
+  useEffect(() => {
+    const loadMatches = async () => {
+      setLoading(true)
+      setError("")
+
+      try {
+        const [matchesRes, sentRes] = await Promise.all([
+          getSuggestedMatches(),
+          getSentRequests().catch(() => ({ requests: [] })), // non-fatal if this one fails
+        ])
+
+        const matches = (matchesRes.matches || []).map(toDisplayPerson)
+        setPeople(matches)
+
+        const alreadyRequestedIds = (sentRes.requests || []).map((r) => r.to.id)
+        setRequested(alreadyRequestedIds)
+      } catch (err) {
+        console.error("Failed to load suggested matches:", err)
+        setError("Couldn't load matches right now. Please try again in a moment.")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadMatches()
+  }, [])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
 
-    if (!q) return PEOPLE
+    if (!q) return people
 
-    return PEOPLE.filter((p) => {
+    return people.filter((p) => {
       const haystack = [p.name, p.title, ...p.teach, ...p.learn]
         .join(" ")
         .toLowerCase()
 
       return haystack.includes(q)
     })
-  }, [query])
+  }, [query, people])
 
-  const toggleRequest = (id) => {
-    setRequested((prev) =>
-      prev.includes(id)
-        ? prev.filter((x) => x !== id)
-        : [...prev, id],
-    )
+  const toggleRequest = async (id) => {
+    if (requested.includes(id)) return
+
+    // Optimistic update so the button flips immediately
+    setRequested((prev) => [...prev, id])
+
+    try {
+      await sendMatchRequest(id)
+    } catch (err) {
+      console.error("Failed to send request:", err)
+      // Roll back on failure so the button doesn't lie about the real state
+      setRequested((prev) => prev.filter((x) => x !== id))
+    }
   }
 
   return (
@@ -108,12 +115,26 @@ export default function Dashboard() {
           setQuery={setQuery}
         />
 
-        {/* Matches */}
-        <MatchList
-          filtered={filtered}
-          requested={requested}
-          toggleRequest={toggleRequest}
-        />
+        {loading ? (
+          <Loader className="py-16" />
+        ) : error ? (
+          <div className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-red-200 bg-red-50 py-16 text-center text-sm text-red-600">
+            <AlertCircle className="h-5 w-5" />
+            {error}
+          </div>
+        ) : people.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-300 bg-white py-16 text-center">
+            <p className="text-sm text-slate-500">
+              No suggested matches yet. Add skills to your profile to get matched with other members.
+            </p>
+          </div>
+        ) : (
+          <MatchList
+            filtered={filtered}
+            requested={requested}
+            toggleRequest={toggleRequest}
+          />
+        )}
 
       </div>
     </div>
