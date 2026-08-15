@@ -2,6 +2,7 @@ import {
   Check,
   GraduationCap,
   Lightbulb,
+  MessageCircle,
   X,
 } from "lucide-react"
 
@@ -20,7 +21,7 @@ const STATUS_BADGE = {
   },
 }
 
-export default function RequestCard({ req, updateStatus }) {
+export default function RequestCard({ req, updateStatus, onMessage }) {
   const badge = STATUS_BADGE[req.status]
 
   return (
@@ -117,6 +118,20 @@ export default function RequestCard({ req, updateStatus }) {
           </button>
         </div>
       )}
+
+      {req.status === "accepted" && (
+  <div className="mt-5">
+    <button
+      type="button"
+      onClick={() => onMessage?.(req)}
+      className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+    >
+      <MessageCircle className="h-4 w-4" />
+      Message
+    </button>
+  </div>
+)}
     </article>
   )
 }
+

@@ -5,6 +5,7 @@ import { Clock } from "lucide-react"
 
 import RequestCard from "../components/inbox/RequestCard"
 import RequestTabs from "../components/inbox/RequestTabs"
+import ChatWindow from "../components/messages/ChatWindow"
 
 const INITIAL_REQUESTS = [
   {
@@ -68,6 +69,7 @@ const TABS = [
 export default function Inbox() {
   const [requests, setRequests] = useState(INITIAL_REQUESTS)
   const [activeTab, setActiveTab] = useState("pending")
+  const [chatPerson, setChatPerson] = useState(null)
 
   const counts = useMemo(() => {
     return requests.reduce(
@@ -129,9 +131,29 @@ export default function Inbox() {
                 key={req.id}
                 req={req}
                 updateStatus={updateStatus}
+                onMessage={(person) => setChatPerson(person)}
               />
             ))}
           </div>
+        )}
+        {chatPerson && (
+          <ChatWindow
+            conversation={{
+              person: {
+                id: chatPerson.id,
+                name: chatPerson.name,
+                role: chatPerson.title,
+                avatar: chatPerson.initials,
+                color: chatPerson.avatarColor,
+                online: true,
+              },
+              messages: [],
+            }}
+            onBack={() => setChatPerson(null)}
+            onSend={(text, person) => {
+              console.log("Message:", text, "to:", person)
+            }}
+          />
         )}
       </div>
     </div>
