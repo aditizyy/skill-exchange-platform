@@ -12,8 +12,6 @@ export default function ProfileForm({
   onPhotoChange,
   fullName,
   setFullName,
-  bio,
-  setBio,
   teachSkills,
   learnSkills,
   onTeachSkillToggle,
@@ -51,30 +49,6 @@ export default function ProfileForm({
           placeholder="e.g. Jordan Rivera"
           className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none transition-colors placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
         />
-      </div>
-
-      {/* Bio */}
-      <div className="mt-5 flex flex-col gap-2">
-        <label
-          htmlFor="bio"
-          className="text-sm font-medium text-slate-700"
-        >
-          Short Bio
-        </label>
-
-        <textarea
-          id="bio"
-          value={bio}
-          onChange={(e) => setBio(e.target.value)}
-          rows={3}
-          maxLength={240}
-          placeholder="Share a little about yourself and your learning goals..."
-          className="resize-none rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none transition-colors placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-        />
-
-        <span className="self-end text-xs text-slate-400">
-          {bio.length}/240
-        </span>
       </div>
 
       {/* Skills to teach */}
