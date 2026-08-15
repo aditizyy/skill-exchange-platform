@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { updateUserProfile } from "../api/userApi"
+import { useEffect, useState } from "react"
+import { getUserProfile, updateUserProfile } from "../api/userApi"
 import ProfileForm from "../components/profile/ProfileForm"
 
 const SKILL_LIBRARY = [
@@ -37,6 +37,26 @@ export default function ProfileSetup() {
   const [bio, setBio] = useState("")
   const [teachSkills, setTeachSkills] = useState([])
   const [learnSkills, setLearnSkills] = useState([])
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const response = await getUserProfile()
+        const user = response.user
+
+        if (user) {
+          setFullName(user.name || "")
+          setBio(user.bio || "")
+          setTeachSkills(user.skillsToTeach || [])
+          setLearnSkills(user.skillsToLearn || [])
+        }
+      } catch (error) {
+        console.error("Failed to load profile:", error)
+      }
+    }
+
+    loadProfile()
+  }, [])
 
   const handlePhotoChange = (e) => {
     const file = e.target.files?.[0]
