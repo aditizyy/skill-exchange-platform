@@ -31,12 +31,19 @@ const updateProfileValidation = [
         .notEmpty()
         .withMessage("Each skillToLearn must be a non-empty string"),
 
+    body("bio")
+        .optional()
+        .isString()
+        .isLength({ max: 240 })
+        .withMessage("Bio must be 240 characters or fewer"),
+
     body()
         .custom((value) => {
             if (
                 !value.name &&
                 value.skillsToTeach === undefined &&
-                value.skillsToLearn === undefined
+                value.skillsToLearn === undefined &&
+                value.bio === undefined
             ) {
                 throw new Error("At least one field must be provided");
             }
