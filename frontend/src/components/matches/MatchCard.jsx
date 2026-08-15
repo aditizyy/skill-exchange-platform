@@ -25,7 +25,8 @@ export default function MatchCard({ person, isRequested, onToggleRequest }) {
           </h2>
 
           <p className="truncate text-xs text-slate-500">
-            {person.title} &middot; {person.location}
+            {person.title}
+            {person.location ? ` \u00B7 ${person.location}` : ""}
           </p>
         </div>
       </div>

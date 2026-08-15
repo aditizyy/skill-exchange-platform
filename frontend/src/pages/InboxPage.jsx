@@ -1,64 +1,14 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Clock } from "lucide-react"
 
 import RequestCard from "../components/inbox/RequestCard"
 import RequestTabs from "../components/inbox/RequestTabs"
 import ChatWindow from "../components/messages/ChatWindow"
-
-const INITIAL_REQUESTS = [
-  {
-    id: 1,
-    name: "Aditi",
-    title: "Product Designer",
-    initials: "A",
-    avatarColor: "bg-blue-600",
-    teach: ["UI/UX Design", "Figma", "Illustration"],
-    learn: ["React", "TypeScript"],
-    status: "pending",
-  },
-  {
-    id: 2,
-    name: "Kashika Soni",
-    title: "Frontend Engineer",
-    initials: "KS",
-    avatarColor: "bg-indigo-600",
-    teach: ["React", "TypeScript", "Node.js"],
-    learn: ["UI/UX Design", "Public Speaking"],
-    status: "pending",
-  },
-  {
-    id: 3,
-    name: "Disha kushwaha",
-    title: "Marketing Lead",
-    initials: "DK",
-    avatarColor: "bg-sky-600",
-    teach: ["Digital Marketing", "SEO", "Writing"],
-    learn: ["Data Analysis", "Excel"],
-    status: "accepted",
-  },
-  {
-    id: 4,
-    name: "Aastha Singh",
-    title: "Data Scientist",
-    initials: "AS",
-    avatarColor: "bg-cyan-700",
-    teach: ["Python", "Machine Learning", "Data Analysis"],
-    learn: ["Guitar", "Spanish"],
-    status: "declined",
-  },
-  {
-    id: 5,
-    name: "Vriti",
-    title: "Language Tutor",
-    initials: "V",
-    avatarColor: "bg-blue-500",
-    teach: ["Spanish", "French", "Public Speaking"],
-    learn: ["Photography", "Video Editing"],
-    status: "pending",
-  },
-]
+import Loader from "../components/common/Loader"
+import { getInboxRequests, respondToRequest } from "../api/matchApi"
+import { mapUserToDisplayPerson } from "../utils/userDisplay"
 
 const TABS = [
   { key: "pending", label: "Pending" },
@@ -66,10 +16,53 @@ const TABS = [
   { key: "declined", label: "Declined" },
 ]
 
+// Merges the Request document (id, status) with the display shape derived
+// from the requester's user profile (name, initials, teach/learn, etc).
+function mapRequestToCardData(request) {
+  return {
+    ...mapUserToDisplayPerson(request.from),
+    id: request.id,
+    userId: request.from.id,
+    status: request.status,
+  }
+}
+
 export default function Inbox() {
-  const [requests, setRequests] = useState(INITIAL_REQUESTS)
+  const [requests, setRequests] = useState([])
   const [activeTab, setActiveTab] = useState("pending")
   const [chatPerson, setChatPerson] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [actionError, setActionError] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadInbox() {
+      setLoading(true)
+      setError(null)
+
+      try {
+        const res = await getInboxRequests()
+        if (cancelled) return
+        setRequests((res.requests || []).map(mapRequestToCardData))
+      } catch (err) {
+        if (cancelled) return
+        setError(
+          err?.response?.data?.message ||
+            "Couldn't load your inbox. Please try again.",
+        )
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    loadInbox()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const counts = useMemo(() => {
     return requests.reduce(
@@ -86,10 +79,25 @@ export default function Inbox() {
     [requests, activeTab],
   )
 
-  const updateStatus = (id, status) => {
+  const updateStatus = async (id, status) => {
+    setActionError(null)
+
+    // Keep the previous state around so we can roll back on failure
+    const previous = requests
+
     setRequests((prev) =>
       prev.map((r) => (r.id === id ? { ...r, status } : r)),
     )
+
+    try {
+      await respondToRequest(id, status)
+    } catch (err) {
+      setRequests(previous)
+      setActionError(
+        err?.response?.data?.message ||
+          "Couldn't update that request. Please try again.",
+      )
+    }
   }
 
   return (
@@ -115,8 +123,24 @@ export default function Inbox() {
           counts={counts}
         />
 
+        {error && (
+          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
+        {actionError && (
+          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {actionError}
+          </div>
+        )}
+
         {/* Cards */}
-        {visible.length === 0 ? (
+        {loading ? (
+          <div className="flex justify-center py-16">
+            <Loader />
+          </div>
+        ) : visible.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white py-16 text-center">
             <Clock className="mx-auto mb-3 h-8 w-8 text-slate-300" />
 
@@ -136,16 +160,19 @@ export default function Inbox() {
             ))}
           </div>
         )}
+
+        {/* Real-time chat wiring lands in Phase 3 — ChatWindow still sends
+            to a console.log stub until messageApi.js exists. */}
         {chatPerson && (
           <ChatWindow
             conversation={{
               person: {
-                id: chatPerson.id,
+                id: chatPerson.userId,
                 name: chatPerson.name,
                 role: chatPerson.title,
                 avatar: chatPerson.initials,
                 color: chatPerson.avatarColor,
-                online: true,
+                online: false,
               },
               messages: [],
             }}

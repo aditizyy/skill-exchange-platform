@@ -1,86 +1,106 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import MatchFilterBar from "../components/matches/MatchFilterBar"
 import MatchList from "../components/matches/MatchList"
-
-const PEOPLE = [
-  {
-    id: 1,
-    name: "Aditi",
-    title: "Product Designer",
-    location: "Sarojini nagar, Delhi",
-    initials: "A",
-    avatarColor: "bg-blue-600",
-    teach: ["UI/UX Design", "Figma", "Illustration"],
-    learn: ["React", "TypeScript"],
-  },
-  {
-    id: 2,
-    name: "Kashika Soni",
-    title: "Frontend Engineer",
-    location: "Rohini, Delhi",
-    initials: "KS",
-    avatarColor: "bg-indigo-600",
-    teach: ["React", "TypeScript", "Node.js"],
-    learn: ["UI/UX Design", "Public Speaking"],
-  },
-  {
-    id: 3,
-    name: "Disha Kushwaha",
-    title: "Marketing Lead",
-    location: "Agra, UP",
-    initials: "DK",
-    avatarColor: "bg-sky-600",
-    teach: ["Digital Marketing", "SEO", "Writing"],
-    learn: ["Data Analysis", "Excel"],
-  },
-  {
-    id: 4,
-    name: "Aastha Singh",
-    title: "Data Scientist",
-    location: "Banaras, UP",
-    initials: "AS",
-    avatarColor: "bg-cyan-700",
-    teach: ["Python", "Machine Learning", "Data Analysis"],
-    learn: ["Guitar", "Spanish"],
-  },
-  {
-    id: 5,
-    name: "Vriti",
-    title: "Language Tutor",
-    location: "Chanakyapuri, Delhi",
-    initials: "V",
-    avatarColor: "bg-blue-500",
-    teach: ["Spanish", "French", "Public Speaking"],
-    learn: ["Photography", "Video Editing"],
-  },
-]
+import Loader from "../components/common/Loader"
+import { getSuggestedMatches, getSentRequests, sendMatchRequest } from "../api/matchApi"
+import { mapUserToDisplayPerson } from "../utils/userDisplay"
 
 export default function Dashboard() {
   const [query, setQuery] = useState("")
-  const [requested, setRequested] = useState([])
+  const [people, setPeople] = useState([])
+  const [requested, setRequested] = useState(new Set())
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [infoMessage, setInfoMessage] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadDashboardData() {
+      setLoading(true)
+      setError(null)
+
+      try {
+        // Fetch suggested matches and sent requests in parallel so we can
+        // mark people who already have a pending/accepted request as such.
+        const [matchesRes, sentRes] = await Promise.all([
+          getSuggestedMatches(),
+          getSentRequests(),
+        ])
+
+        if (cancelled) return
+
+        const mapped = (matchesRes.matches || []).map(mapUserToDisplayPerson)
+        const alreadyRequestedIds = new Set(
+          (sentRes.requests || []).map((r) => r.to.id),
+        )
+
+        setPeople(mapped)
+        setRequested(alreadyRequestedIds)
+
+        if (matchesRes.message) {
+          setInfoMessage(matchesRes.message)
+        }
+      } catch (err) {
+        if (cancelled) return
+        setError(
+          err?.response?.data?.message ||
+            "Couldn't load suggested matches. Please try again.",
+        )
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    loadDashboardData()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
 
-    if (!q) return PEOPLE
+    if (!q) return people
 
-    return PEOPLE.filter((p) => {
+    return people.filter((p) => {
       const haystack = [p.name, p.title, ...p.teach, ...p.learn]
         .join(" ")
         .toLowerCase()
 
       return haystack.includes(q)
     })
-  }, [query])
+  }, [people, query])
 
-  const toggleRequest = (id) => {
-    setRequested((prev) =>
-      prev.includes(id)
-        ? prev.filter((x) => x !== id)
-        : [...prev, id],
-    )
+  const toggleRequest = async (id) => {
+    // Already sent -> nothing to do here (button is disabled once requested)
+    if (requested.has(id)) return
+
+    // Optimistically mark as requested so the button updates immediately
+    setRequested((prev) => new Set(prev).add(id))
+
+    try {
+      await sendMatchRequest(id)
+    } catch (err) {
+      const status = err?.response?.status
+
+      // 409 = request already exists server-side; treat as success, not an error
+      if (status !== 409) {
+        // Roll back the optimistic update on real failures
+        setRequested((prev) => {
+          const next = new Set(prev)
+          next.delete(id)
+          return next
+        })
+        setError(
+          err?.response?.data?.message ||
+            "Couldn't send that request. Please try again.",
+        )
+      }
+    }
   }
 
   return (
@@ -108,12 +128,30 @@ export default function Dashboard() {
           setQuery={setQuery}
         />
 
+        {error && (
+          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
+        {infoMessage && !loading && people.length === 0 && !error && (
+          <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+            {infoMessage}
+          </div>
+        )}
+
         {/* Matches */}
-        <MatchList
-          filtered={filtered}
-          requested={requested}
-          toggleRequest={toggleRequest}
-        />
+        {loading ? (
+          <div className="flex justify-center py-16">
+            <Loader />
+          </div>
+        ) : (
+          <MatchList
+            filtered={filtered}
+            requested={Array.from(requested)}
+            toggleRequest={toggleRequest}
+          />
+        )}
 
       </div>
     </div>
