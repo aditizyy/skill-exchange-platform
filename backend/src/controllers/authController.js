@@ -10,9 +10,9 @@ const registerUser = async (req, res) => {
         const existingUser = await User.findOne({ email });
 
         if (existingUser) {
-            return res.status(400).json({
+            return res.status(409).json({
                 success: false,
-                message: "User already exists"
+                message: "An account with this email already exists"
             });
         }
 
@@ -23,26 +23,31 @@ const registerUser = async (req, res) => {
             email,
             password: hashedPassword
         });
-
+        if (!process.env.JWT_SECRET) {
+            throw new Error("JWT_SECRET is not configured");
+        }
         const token = jwt.sign(
             { id: user._id },
             process.env.JWT_SECRET,
             { expiresIn: "7d" }
         );
 
-        res.status(200).json({
+        res.status(201).json({
             success: true,
             message: "Registration Successful",
             token,
             user: {
                 id: user._id,
                 name: user.name,
-                email: user.email
+                email: user.email,
+                skillsToTeach: user.skillsToTeach,
+                skillsToLearn: user.skillsToLearn,
+                avatarUrl: user.avatarUrl
             }
         });
 
     } catch (error) {
-
+        console.error("Registration Error:", error);
         res.status(500).json({
             success: false,
             message: "Server Error"
@@ -89,13 +94,16 @@ const loginUser = async (req, res) => {
             user: {
                 id: user._id,
                 name: user.name,
-                email: user.email
+                email: user.email,
+                skillsToTeach: user.skillsToTeach,
+                skillsToLearn: user.skillsToLearn,
+                avatarUrl: user.avatarUrl
             }
         });
 
     } catch (error) {
 
-        console.log(error);
+        console.error("Login Error:", error);
 
         res.status(500).json({
             success: false,
