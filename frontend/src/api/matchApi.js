@@ -22,6 +22,11 @@ export const getSentRequests = async () => {
   return response.data;
 };
 
+export const getConnections = async () => {
+  const response = await axiosInstance.get("/matches/connections");
+  return response.data;
+};
+
 export const respondToRequest = async (requestId, status) => {
   const response = await axiosInstance.patch(
     `/matches/${requestId}`,

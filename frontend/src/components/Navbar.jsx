@@ -8,6 +8,7 @@ const NAV_LINKS = [
   { label: "Home", to: "/" },
   { label: "Dashboard", to: "/dashboard" },
   { label: "Inbox", to: "/inbox" },
+  { label: "Connections", to: "/connections" },
 ]
 
 export default function Navbar() {

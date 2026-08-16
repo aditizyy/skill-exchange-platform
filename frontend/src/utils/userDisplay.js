@@ -33,7 +33,7 @@ export function getAvatarColor(id = "") {
 
 // Maps a backend user object (from suggested matches or a populated request)
 // into the { id, name, title, location, initials, avatarColor, teach, learn }
-// shape the existing UI components expect.
+// shape MatchCard/RequestCard expect.
 export function mapUserToDisplayPerson(user) {
   if (!user) return null;
 
@@ -47,5 +47,27 @@ export function mapUserToDisplayPerson(user) {
     teach: user.skillsToTeach || [],
     learn: user.skillsToLearn || [],
     email: user.email,
+  };
+}
+
+// Maps a backend connection's user object into the { id, userId, name,
+// avatar, color, online, role, offers, learns } shape ConnectedUserCard
+// expects. `userId` is included alongside `id` so this object can be
+// passed straight into useChatPopup's openChatWith.
+export function mapUserToConnectionCard(user) {
+  if (!user) return null;
+
+  return {
+    id: user.id,
+    userId: user.id,
+    name: user.name || "Unknown User",
+    role: "Skill Exchange Member",
+    online: false,
+    initials: getInitials(user.name),
+    avatar: getInitials(user.name),
+    color: getAvatarColor(user.id),
+    avatarColor: getAvatarColor(user.id),
+    offers: user.skillsToTeach || [],
+    learns: user.skillsToLearn || [],
   };
 }

@@ -313,10 +313,52 @@ const respondToRequest = async (req, res) => {
   }
 };
 
+/**
+ * GET /api/matches/connections
+ * Returns everyone the current user has an *accepted* connection with,
+ * regardless of who originally sent the request.
+ */
+const getConnections = async (req, res) => {
+  try {
+    const myId = req.user.id;
+
+    const requests = await Request.find({
+      status: "accepted",
+      $or: [{ fromUser: myId }, { toUser: myId }],
+    })
+      .populate("fromUser", "-password")
+      .populate("toUser", "-password")
+      .sort({ updatedAt: -1 });
+
+    const connections = requests.map((r) => {
+      const isFromMe = r.fromUser._id.toString() === myId;
+      const otherUser = isFromMe ? r.toUser : r.fromUser;
+
+      return {
+        requestId: r._id,
+        connectedAt: r.updatedAt,
+        user: toPublicProfile(otherUser, true),
+      };
+    });
+
+    res.json({
+      success: true,
+      connections,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
+  }
+};
+
 module.exports = {
   getSuggestedMatches,
   sendRequest,
   getInbox,
   getSentRequests,
+  getConnections,
   respondToRequest,
 };

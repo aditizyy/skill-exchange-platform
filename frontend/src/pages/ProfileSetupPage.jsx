@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { getUserProfile, updateUserProfile } from "../api/userApi"
 import ProfileForm from "../components/profile/ProfileForm"
 
@@ -32,10 +33,12 @@ const SKILL_LIBRARY = [
 ]
 
 export default function ProfileSetup() {
+  const navigate = useNavigate()
   const [photo, setPhoto] = useState(null)
   const [fullName, setFullName] = useState("")
   const [teachSkills, setTeachSkills] = useState([])
   const [learnSkills, setLearnSkills] = useState([])
+  const [saveError, setSaveError] = useState(null)
   
   useEffect(() => {
     const loadProfile = async () => {
@@ -72,6 +75,7 @@ export default function ProfileSetup() {
 
   const handleSave = async (e) => {
    e.preventDefault()
+   setSaveError(null)
 
    try {
      await updateUserProfile({
@@ -80,9 +84,12 @@ export default function ProfileSetup() {
        skillsToLearn: learnSkills,
       })
 
-    console.log("Profile saved successfully")
+    navigate("/dashboard")
   } catch (error) {
-    console.error("Failed to save profile:", error)
+    setSaveError(
+      error?.response?.data?.message ||
+        "Couldn't save your profile. Please try again.",
+    )
   }
 }
 
@@ -98,6 +105,12 @@ export default function ProfileSetup() {
             Tell the community who you are and what skills you want to exchange.
           </p>
         </div>
+
+        {saveError && (
+          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {saveError}
+          </div>
+        )}
 
         <ProfileForm
           photo={photo}

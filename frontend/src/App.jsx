@@ -8,6 +8,7 @@ import RegisterPage from './pages/RegisterPage';
 import ProfileSetupPage from './pages/ProfileSetupPage';
 import DashboardPage from './pages/DashboardPage';
 import InboxPage from './pages/InboxPage';
+import ConnectionsPage from './pages/ConnectionsPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 export default function App() {
@@ -27,6 +28,7 @@ export default function App() {
             <Route path="/profile" element={<ProfileSetupPage />} />
             <Route path="/profile-setup" element={<ProfileSetupPage />} />
             <Route path="/inbox" element={<InboxPage />} />
+            <Route path="/connections" element={<ConnectionsPage />} />
           </Route>
 
           {/* 404 Catch-All Route */}

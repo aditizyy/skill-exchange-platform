@@ -14,6 +14,7 @@ const {
   sendRequest,
   getInbox,
   getSentRequests,
+  getConnections,
   respondToRequest,
 } = require("../controllers/matchController");
 
@@ -26,6 +27,7 @@ router.post("/request", sendRequestValidation, sendRequest);
 
 router.get("/inbox", getInbox);
 router.get("/sent", getSentRequests);
+router.get("/connections", getConnections);
 
 router.patch("/:id", respondToRequestValidation, respondToRequest);
 
