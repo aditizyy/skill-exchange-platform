@@ -8,7 +8,14 @@ import RequestTabs from "../components/inbox/RequestTabs"
 import ChatWindow from "../components/messages/ChatWindow"
 import Loader from "../components/common/Loader"
 import { getInboxRequests, respondToRequest } from "../api/matchApi"
+import {
+  getOrCreateConversation,
+  getMessages,
+  sendMessage,
+} from "../api/messageApi"
 import { mapUserToDisplayPerson } from "../utils/userDisplay"
+import { formatMessageTime } from "../utils/formatTime"
+import { useAuth } from "../context/AuthContext"
 
 const TABS = [
   { key: "pending", label: "Pending" },
@@ -27,13 +34,26 @@ function mapRequestToCardData(request) {
   }
 }
 
+// There's no WebSocket layer yet, so an open conversation is kept fresh by
+// polling on this interval. Fine for a low-traffic 1:1 chat; revisit if
+// real-time delivery becomes a requirement.
+const MESSAGE_POLL_INTERVAL_MS = 4000
+
 export default function Inbox() {
+  const { user } = useAuth()
+
   const [requests, setRequests] = useState([])
   const [activeTab, setActiveTab] = useState("pending")
-  const [chatPerson, setChatPerson] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [actionError, setActionError] = useState(null)
+
+  // Chat popup state
+  const [chatPerson, setChatPerson] = useState(null)
+  const [conversationId, setConversationId] = useState(null)
+  const [chatMessages, setChatMessages] = useState([])
+  const [chatLoading, setChatLoading] = useState(false)
+  const [chatError, setChatError] = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -64,6 +84,60 @@ export default function Inbox() {
     }
   }, [])
 
+  // Open (or create) the conversation and load its message history whenever
+  // a chat is opened.
+  useEffect(() => {
+    if (!chatPerson) return
+
+    let cancelled = false
+
+    async function openChat() {
+      setChatLoading(true)
+      setChatError(null)
+
+      try {
+        const convoRes = await getOrCreateConversation(chatPerson.userId)
+        if (cancelled) return
+        setConversationId(convoRes.conversation.id)
+
+        const msgsRes = await getMessages(convoRes.conversation.id)
+        if (cancelled) return
+        setChatMessages(msgsRes.messages || [])
+      } catch (err) {
+        if (cancelled) return
+        setChatError(
+          err?.response?.data?.message ||
+            "Couldn't open this conversation. Please try again.",
+        )
+      } finally {
+        if (!cancelled) setChatLoading(false)
+      }
+    }
+
+    openChat()
+
+    return () => {
+      cancelled = true
+    }
+  }, [chatPerson])
+
+  // Poll for new messages while a conversation is open.
+  useEffect(() => {
+    if (!conversationId) return
+
+    const interval = setInterval(async () => {
+      try {
+        const msgsRes = await getMessages(conversationId)
+        setChatMessages(msgsRes.messages || [])
+      } catch {
+        // Silent — a single missed poll isn't worth interrupting the user;
+        // the next tick will catch up.
+      }
+    }, MESSAGE_POLL_INTERVAL_MS)
+
+    return () => clearInterval(interval)
+  }, [conversationId])
+
   const counts = useMemo(() => {
     return requests.reduce(
       (acc, r) => {
@@ -79,10 +153,23 @@ export default function Inbox() {
     [requests, activeTab],
   )
 
+  const openChatWith = (person) => {
+    setChatPerson(person)
+    setConversationId(null)
+    setChatMessages([])
+    setChatError(null)
+  }
+
+  const closeChat = () => {
+    setChatPerson(null)
+    setConversationId(null)
+    setChatMessages([])
+    setChatError(null)
+  }
+
   const updateStatus = async (id, status) => {
     setActionError(null)
 
-    // Keep the previous state around so we can roll back on failure
     const previous = requests
 
     setRequests((prev) =>
@@ -99,6 +186,27 @@ export default function Inbox() {
       )
     }
   }
+
+  const handleSendMessage = async (text) => {
+    if (!conversationId) return
+
+    try {
+      const res = await sendMessage(conversationId, text)
+      setChatMessages((prev) => [...prev, res.message])
+    } catch (err) {
+      setChatError(
+        err?.response?.data?.message ||
+          "Couldn't send that message. Please try again.",
+      )
+    }
+  }
+
+  const displayMessages = chatMessages.map((m) => ({
+    id: m.id,
+    text: m.text,
+    time: formatMessageTime(m.createdAt),
+    sender: m.senderId === user?.id ? "me" : "them",
+  }))
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -135,6 +243,12 @@ export default function Inbox() {
           </div>
         )}
 
+        {chatError && (
+          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {chatError}
+          </div>
+        )}
+
         {/* Cards */}
         {loading ? (
           <div className="flex justify-center py-16">
@@ -155,15 +269,20 @@ export default function Inbox() {
                 key={req.id}
                 req={req}
                 updateStatus={updateStatus}
-                onMessage={(person) => setChatPerson(person)}
+                onMessage={(person) => openChatWith(person)}
               />
             ))}
           </div>
         )}
 
-        {/* Real-time chat wiring lands in Phase 3 — ChatWindow still sends
-            to a console.log stub until messageApi.js exists. */}
-        {chatPerson && (
+        {/* Chat popup */}
+        {chatPerson && chatLoading && (
+          <div className="fixed bottom-4 right-4 z-20 flex w-[min(380px,calc(100vw-2rem))] items-center justify-center rounded-3xl border border-slate-200 bg-white p-10 shadow-2xl">
+            <Loader />
+          </div>
+        )}
+
+        {chatPerson && !chatLoading && (
           <ChatWindow
             conversation={{
               person: {
@@ -174,12 +293,10 @@ export default function Inbox() {
                 color: chatPerson.avatarColor,
                 online: false,
               },
-              messages: [],
+              messages: displayMessages,
             }}
-            onBack={() => setChatPerson(null)}
-            onSend={(text, person) => {
-              console.log("Message:", text, "to:", person)
-            }}
+            onBack={() => closeChat()}
+            onSend={(text) => handleSendMessage(text)}
           />
         )}
       </div>
